@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>First Position — a beginner's risk/return screener</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEFF2;
+    --ink:#101820;
+    --ink-soft:#4A5560;
+    --ink-faint:#8A939C;
+    --card:#FFFFFF;
+    --line:#D8DCE1;
+    --teal:#0F5257;
+    --teal-ink:#0A3A3D;
+    --teal-fill:#E2EEEE;
+    --mustard:#B8862B;
+    --mustard-fill:#F7EDDA;
+    --mustard-ink:#6B4C15;
+    --risk:#A6383F;
+    --risk-fill:#F6E4E5;
+    --risk-ink:#6E2229;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.55;
+    padding:0 0 4rem;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px;}
+  .hero{padding:56px 24px 40px;max-width:920px;margin:0 auto;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--teal-ink);
+    background:var(--teal-fill);
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:3px;
+    margin-bottom:18px;
+  }
+  h1{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:clamp(30px,4.4vw,44px);
+    line-height:1.1;
+    margin:0 0 16px;
+    letter-spacing:-.01em;
+  }
+  .hero p{
+    font-size:17px;
+    color:var(--ink-soft);
+    max-width:640px;
+    margin:0 0 8px;
+  }
+  .thesis{
+    margin-top:28px;
+    border-left:2px solid var(--teal);
+    padding:2px 0 2px 18px;
+    font-family:'Fraunces',serif;
+    font-size:18px;
+    font-style:italic;
+    color:var(--ink);
+    max-width:600px;
+  }
+  section{padding:36px 24px;max-width:920px;margin:0 auto;border-top:1px solid var(--line);}
+  h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:22px;
+    margin:0 0 6px;
+  }
+  .section-sub{color:var(--ink-soft);font-size:14.5px;margin:0 0 22px;max-width:620px;}
+  .controls{
+    display:flex;gap:28px;flex-wrap:wrap;margin-bottom:8px;
+  }
+  .control-group{flex:1;min-width:220px;}
+  .control-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:8px;display:block;
+  }
+  .pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .pill{
+    font-family:'Inter',sans-serif;font-size:13.5px;font-weight:500;
+    padding:9px 14px;border-radius:20px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink-soft);cursor:pointer;
+    transition:all .15s ease;
+  }
+  .pill:hover{border-color:var(--ink-faint);}
+  .pill.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .cards{display:flex;flex-direction:column;gap:12px;margin-top:28px;}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:18px 20px;display:grid;grid-template-columns:1fr auto;gap:8px 20px;align-items:center;
+  }
+  .card-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .ticker{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:16px;}
+  .name{color:var(--ink-soft);font-size:14px;}
+  .tag{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+    padding:2px 7px;border-radius:3px;
+  }
+  .tag.etf{background:var(--teal-fill);color:var(--teal-ink);}
+  .tag.stock{background:var(--risk-fill);color:var(--risk-ink);}
+  .metrics{grid-column:1/2;display:flex;gap:22px;flex-wrap:wrap;margin-top:6px;}
+  .metric{font-size:13px;}
+  .metric b{
+    font-family:'IBM Plex Mono',monospace;font-weight:500;display:block;font-size:15px;color:var(--ink);
+  }
+  .metric span{color:var(--ink-faint);font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;}
+  .score-wrap{grid-row:1/3;grid-column:2/3;text-align:right;min-width:110px;}
+  .score-num{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:500;}
+  .score-label{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;}
+  .score-bar{width:100px;height:5px;background:var(--line);border-radius:3px;overflow:hidden;margin-left:auto;}
+  .score-fill{height:100%;background:var(--teal);}
+  .compass-wrap{margin-top:8px;}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-soft);margin-top:14px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+  .framework{display:flex;flex-direction:column;gap:16px;margin-top:22px;}
+  .step{
+    display:grid;grid-template-columns:34px 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--line);
+  }
+  .step:first-child{border-top:none;padding-top:0;}
+  .step-num{
+    font-family:'Fraunces',serif;font-size:20px;color:var(--teal);
+  }
+  .step h3{margin:0 0 6px;font-size:15.5px;font-weight:600;font-family:'Inter',sans-serif;}
+  .step p{margin:0;color:var(--ink-soft);font-size:14.5px;}
+  .caution-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;}
+  .caution-card{
+    background:var(--mustard-fill);border:1px solid #E6D3A9;border-radius:8px;padding:14px 16px;
+  }
+  .caution-card b{display:block;font-size:13px;color:var(--mustard-ink);margin-bottom:4px;font-family:'IBM Plex Mono',monospace;}
+  .caution-card p{margin:0;font-size:13px;color:var(--mustard-ink);opacity:.9;}
+  .disclaimer{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;
+    font-size:13px;color:var(--ink-soft);
+  }
+  .disclaimer b{color:var(--ink);}
+  #analyzeForm{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px;margin-top:20px;}
+  .mode-toggle{display:flex;gap:8px;margin-top:18px;}
+  .quick-form{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  .quick-form input{
+    flex:1;min-width:220px;font-family:'IBM Plex Mono',monospace;font-size:15px;padding:11px 14px;
+    border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);
+  }
+  .mini-note{font-size:12px;color:var(--ink-faint);margin-top:8px;}
+  .af-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .af-field{display:flex;flex-direction:column;gap:5px;}
+  .af-field label{font-size:11.5px;color:var(--ink-faint);font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;}
+  .af-field input, .af-field textarea{
+    font-family:'Inter',sans-serif;font-size:14px;padding:8px 10px;border:1px solid var(--line);
+    border-radius:6px;background:var(--bg);color:var(--ink);
+  }
+  .af-field textarea{resize:vertical;}
+  .af-submit{
+    margin-top:16px;background:var(--teal);color:#fff;border:none;border-radius:20px;
+    padding:11px 22px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;
+  }
+  .af-submit:hover{background:var(--teal-ink);}
+  .af-submit:disabled{opacity:.6;cursor:wait;}
+  .rule-card{
+    margin-top:18px;border:1px solid var(--line);border-radius:10px;padding:18px 20px;background:var(--card);
+  }
+  .rule-tier{
+    display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.04em;
+    text-transform:uppercase;padding:4px 10px;border-radius:4px;margin-bottom:10px;
+  }
+  .rule-tier.t1{background:var(--teal-fill);color:var(--teal-ink);}
+  .rule-tier.t2{background:var(--mustard-fill);color:var(--mustard-ink);}
+  .rule-tier.t3{background:var(--risk-fill);color:var(--risk-ink);}
+  .flag-list{margin:10px 0 0;padding:0;list-style:none;font-size:13.5px;}
+  .flag-list li{padding:5px 0;border-top:1px solid var(--line);}
+  .flag-list li:first-child{border-top:none;}
+  .ai-card{
+    margin-top:16px;border:1px solid var(--line);border-radius:10px;padding:18px 20px;background:var(--card);
+  }
+  .ai-card .ai-label{
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--ink-faint);margin-bottom:10px;
+  }
+  .ai-card .ai-body{font-size:14.5px;color:var(--ink);white-space:pre-wrap;line-height:1.6;}
+  .ai-card .ai-foot{margin-top:12px;font-size:12px;color:var(--ink-faint);border-top:1px solid var(--line);padding-top:10px;}
+  .ai-loading{color:var(--ink-faint);font-style:italic;font-size:14px;}
+  .ai-error{color:var(--risk-ink);font-size:13.5px;}
+  .range-graph{margin:14px 0 4px;}
+  .range-graph .rg-label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .range-graph .rg-track{position:relative;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--teal) 0%,var(--mustard) 50%,var(--risk) 100%);margin:0 6px;}
+  .range-graph .rg-marker{
+    position:absolute;top:-7px;width:2px;height:24px;background:var(--ink);
+  }
+  .range-graph .rg-marker::after{
+    content:attr(data-label);position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:var(--ink);white-space:nowrap;
+  }
+  .range-graph .rg-ends{display:flex;justify-content:space-between;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-faint);}
+  .case-study{
+    margin-top:16px;border:1px dashed var(--line);border-radius:8px;padding:14px 16px;background:var(--bg);
+  }
+  .case-study .cs-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px;}
+  .case-study .cs-headline{font-family:'Fraunces',serif;font-size:22px;margin-bottom:6px;}
+  .case-study .cs-headline .cs-up{color:var(--teal-ink);}
+  .case-study .cs-headline .cs-down{color:var(--risk-ink);}
+  .case-study .cs-rows{font-size:13px;color:var(--ink-soft);display:flex;flex-direction:column;gap:3px;margin-top:8px;}
+  .case-study .cs-rows b{color:var(--ink);font-family:'IBM Plex Mono',monospace;font-weight:500;}
+  .case-study .cs-note{font-size:11.5px;color:var(--ink-faint);margin-top:10px;}
+  .scan-block{
+    background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin-top:18px;
+  }
+  .scan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+  .scan-title{font-family:'Fraunces',serif;font-size:16.5px;margin-bottom:6px;}
+  .scan-btn{white-space:nowrap;flex-shrink:0;}
+  .or-divider{
+    text-align:center;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-faint);
+    text-transform:uppercase;letter-spacing:.05em;margin:20px 0 14px;
+  }
+  .candidate-card{
+    border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-top:12px;background:var(--bg);
+  }
+  .candidate-card .cc-head{display:flex;align-items:baseline;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+  .candidate-card .cc-ticker{font-family:'IBM Plex Mono',monospace;font-weight:500;font-size:16px;}
+  .candidate-card .cc-name{color:var(--ink-soft);font-size:14px;}
+  .candidate-card .cc-row{font-size:13.5px;margin-top:6px;}
+  .candidate-card .cc-row b{display:block;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);margin-bottom:2px;}
+  .candidate-card .cc-verdict{margin-top:8px;font-size:12.5px;color:var(--mustard-ink);background:var(--mustard-fill);display:inline-block;padding:3px 8px;border-radius:4px;}
+  .trend-chart{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);}
+  .trend-chart .tc-label{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:10px;}
+  .tc-tabs{display:flex;gap:6px;margin-bottom:12px;}
+  .tc-tab{
+    font-family:'IBM Plex Mono',monospace;font-size:11.5px;padding:5px 12px;border-radius:14px;
+    border:1px solid var(--line);background:var(--card);color:var(--ink-soft);cursor:pointer;
+  }
+  .tc-tab.active{background:var(--teal);border-color:var(--teal);color:#fff;}
+  @media(max-width:700px){ .af-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:480px){ .af-grid{grid-template-columns:1fr;} }
+  @media(max-width:600px){
+    .card{grid-template-columns:1fr;}
+    .score-wrap{grid-row:auto;grid-column:1/2;text-align:left;margin-top:10px;}
+    .score-bar{margin-left:0;}
+    .caution-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="eyebrow">Before you buy</span>
+  <h1>Most beginners lose money guessing timing.<br>Fewer lose money screening risk.</h1>
+  <p>This screens ten common starter ETFs and stocks by how their historical volatility fits <em>your</em> horizon and risk tolerance — then walks through the entry and exit discipline that actually holds up, instead of a "buy here, sell there" call nobody can reliably make.</p>
+  <div class="thesis">"The goal isn't picking the stock that goes up most. It's picking the mix you won't panic-sell in a 20% drop."</div>
+</div>
+
+<section id="analyzeSection">
+  <h2>Analyze any stock</h2>
+  <p class="section-sub">Type a ticker and Claude will go do the actual research — live web search, current price, financials, ownership, recent news and filings — then run it through the same critique we did for QUCY. Nothing here streams continuously in the background (no live ticker tape, no news-wire push feed) — every lookup is a fresh, on-demand research pass, run when you ask.</p>
+
+  <div class="mode-toggle" id="modeToggle">
+    <button class="pill active" data-mode="quick">Quick lookup — just a ticker</button>
+    <button class="pill" data-mode="manual">Manual entry — I already have the numbers</button>
+  </div>
+
+  <div id="quickPanel">
+    <div class="scan-block">
+      <div class="scan-head">
+        <div>
+          <div class="scan-title">General Tier — Fallen Angels with a Near-Term Catalyst</div>
+          <div class="mini-note">Quality companies (profitable, strong margins, solid balance sheet) currently down 10–30% off their 52-week high on news that looks temporary — but only ones with an identifiable growth catalyst in the next 6–12 months, operating in a genuinely fast-growing sector. Flat, stagnant "value traps" with no re-acceleration story are explicitly rejected. This is a rules-based scan, not a recommendation.</div>
+        </div>
+        <button type="button" class="af-submit scan-btn" id="scanGeneralBtn">Scan General Tier</button>
+      </div>
+      <div id="scan_general_result"></div>
+    </div>
+    <div class="scan-block">
+      <div class="scan-head">
+        <div>
+          <div class="scan-title">Tier 1 — Blue-Chip Compounders</div>
+          <div class="mini-note">Mega-caps ($100B+) with a wide moat, ROIC over 15%, a fortress balance sheet, and either a discount to their historical valuation or a healthy pullback — plus a real 6–12 month catalyst. This is a rules-based scan, not a recommendation.</div>
+        </div>
+        <button type="button" class="af-submit scan-btn" id="scanTier1Btn">Scan Tier 1</button>
+      </div>
+      <div id="scan_tier1_result"></div>
+    </div>
+    <div class="scan-block">
+      <div class="scan-head">
+        <div>
+          <div class="scan-title">Tier 2 — Sub-$20 High-Growth Compounders</div>
+          <div class="mini-note">Stocks strictly under $20/share, market cap $2B+ (no micro-cap/low-liquidity traps), revenue growth 20%+ or rapid margin expansion, and profitable or clearly inflecting toward it — with a real catalyst in the next 6–12 months. This is a rules-based scan, not a recommendation.</div>
+        </div>
+        <button type="button" class="af-submit scan-btn" id="scanTier2Btn">Scan Tier 2</button>
+      </div>
+      <div id="scan_tier2_result"></div>
+    </div>
+    <div class="or-divider">or look up one specific ticker</div>
+    <div id="quickForm" class="quick-form">
+      <input type="text" id="qk_ticker" placeholder="e.g. QUCY, VOO, AAPL">
+      <button type="button" class="af-submit" id="qk_submitBtn">Research it</button>
+    </div>
+    <p class="mini-note">This runs a real web search each time you submit — it can take 15–30 seconds while Claude reads price data, filings, and recent news.</p>
+    <div id="qk_result"></div>
+  </div>
+
+  <div id="manualPanel" style="display:none;">
+    <div id="analyzeForm">
+      <div class="af-grid">
+        <div class="af-field"><label>Ticker</label><input type="text" id="af_ticker" placeholder="e.g. QUCY" required></div>
+        <div class="af-field"><label>Company name</label><input type="text" id="af_name" placeholder="e.g. Quantum Cyber N.V."></div>
+        <div class="af-field"><label>Current price ($)</label><input type="number" step="0.01" id="af_price" placeholder="1.48"></div>
+        <div class="af-field"><label>Market cap ($M)</label><input type="number" step="0.01" id="af_mcap" placeholder="33.5"></div>
+        <div class="af-field"><label>EPS (ttm)</label><input type="number" step="0.01" id="af_eps" placeholder="-2.10"></div>
+        <div class="af-field"><label>Beta (5Y, optional)</label><input type="number" step="0.01" id="af_beta" placeholder="2.32"></div>
+        <div class="af-field"><label>52-wk low ($)</label><input type="number" step="0.01" id="af_low" placeholder="0.30"></div>
+        <div class="af-field"><label>52-wk high ($)</label><input type="number" step="0.01" id="af_high" placeholder="4.93"></div>
+        <div class="af-field"><label>Largest holder ownership (%, optional)</label><input type="number" step="0.1" id="af_owner" placeholder="94.3"></div>
+        <div class="af-field"><label>Avg daily volume (optional)</label><input type="number" id="af_vol" placeholder="6541146"></div>
+        <div class="af-field"><label>Dividend yield (%, optional)</label><input type="number" step="0.01" id="af_div" placeholder="1.3"></div>
+        <div class="af-field"><label>Price ~1 month ago ($, optional)</label><input type="number" step="0.01" id="af_price1mo" placeholder="1.30"></div>
+        <div class="af-field"><label>Price ~3 months ago ($, optional)</label><input type="number" step="0.01" id="af_price3mo" placeholder="1.15"></div>
+        <div class="af-field"><label>Price ~6 months ago ($, optional)</label><input type="number" step="0.01" id="af_price6mo" placeholder="1.20"></div>
+        <div class="af-field"><label>Price ~1 year ago ($, optional)</label><input type="number" step="0.01" id="af_price1yr" placeholder="1.70"></div>
+      </div>
+      <div class="af-field" style="margin-top:12px;">
+        <label>Story / catalysts / red flags you've found (news, filings, pivots, dilution, anything qualitative)</label>
+        <textarea id="af_notes" rows="4" placeholder="e.g. rebranded from biomedical to defense drones in April 2026, CEO converted preferred shares to 94.3% ownership per Schedule 13D/A, single analyst $9 target..."></textarea>
+      </div>
+      <button type="button" class="af-submit" id="af_submitBtn">Score it + ask Claude</button>
+    </div>
+    <div id="af_ruleResult"></div>
+    <div id="af_aiResult"></div>
+  </div>
+</section>
+
+<section>
+  <h2>Set your profile</h2>
+  <p class="section-sub">Two inputs drive the whole screen: how long the money's in for, and how much swing you can stomach without bailing.</p>
+  <div class="controls">
+    <div class="control-group">
+      <label class="control-label">Time horizon</label>
+      <div class="pill-row" id="horizonPills">
+        <button class="pill" data-val="1">1 year</button>
+        <button class="pill active" data-val="2">2 years</button>
+        <button class="pill" data-val="5">5+ years</button>
+      </div>
+    </div>
+    <div class="control-group">
+      <label class="control-label">Risk tolerance</label>
+      <div class="pill-row" id="riskPills">
+        <button class="pill" data-val="conservative">Conservative</button>
+        <button class="pill active" data-val="balanced">Balanced</button>
+        <button class="pill" data-val="growth">Growth</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Your screen</h2>
+  <p class="section-sub">Ranked by fit to your profile — not by who had the best year. Historical figures are long-run illustrative averages (approximate, may be stale) — check a live quote source before acting on any of this.</p>
+  <div class="cards" id="cards"></div>
+</section>
+
+<section>
+  <h2>The risk/return map</h2>
+  <p class="section-sub">Volatility (x) against long-run historical return (y). Dot size = how cheap it is to hold (bigger = lower expense ratio). This is the picture worth staring at before the ticker names.</p>
+  <div class="compass-wrap" id="compass"></div>
+  <div class="legend" id="legend"></div>
+</section>
+
+<section>
+  <h2>When to go in, when to come out</h2>
+  <p class="section-sub">Honestly: no one — including professional fund managers — reliably calls short-term tops and bottoms. What works instead is deciding your rules before you're emotional.</p>
+  <div class="framework">
+    <div class="step">
+      <div class="step-num">01</div>
+      <div><h3>Go in on a schedule, not a hunch</h3>
+      <p>Split your starting amount into equal chunks and invest on a fixed calendar (e.g. monthly) regardless of price. This is dollar-cost averaging — it removes the "is now a good time?" question entirely and is the standard first move for a beginner.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <div><h3>Set a rebalancing band before you need one</h3>
+      <p>Pick target weights (e.g. 70% broad equity / 20% bonds / 10% dividend). If a position drifts more than ~5 percentage points from its target, trim it back — that's your disciplined "sell some." It's mechanical, not a prediction.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <div><h3>Use valuation as a caution light, not a signal</h3>
+      <p>When broad-market valuation (P/E relative to its own long-run average) is stretched well above normal, that's a reason to keep contributing on schedule but not accelerate — not a reason to sell everything.</p></div>
+    </div>
+    <div class="step">
+      <div class="step-num">04</div>
+      <div><h3>Write your exit rule while you're calm</h3>
+      <p>Decide in advance what would actually change your mind about a holding — a thesis breaking, not a red day. A rule written after a 20% drop is usually panic wearing a strategy's clothes.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Watch points by category</h2>
+  <div class="caution-grid" id="cautions"></div>
+</section>
+
+<section>
+  <div class="disclaimer">
+    <b>Not financial advice.</b> I'm not a licensed advisor and this isn't personalized investment guidance. Return, volatility, yield, and expense-ratio figures above are approximate long-run historical averages meant to illustrate relative risk — not live quotes, not forecasts, and possibly out of date. Past performance never guarantees future results. Verify current data through a live source and, for anything beyond a small first position, consider talking to a licensed financial advisor before you invest.
+  </div>
+</section>
+
+<script>
+const holdings = [
+  {t:'VOO', name:'Vanguard S&P 500 ETF', type:'ETF', class:'broad', cagr:10.5, vol:15, er:0.03, yield:1.3},
+  {t:'VTI', name:'Vanguard Total Stock Market ETF', type:'ETF', class:'broad', cagr:10.2, vol:16, er:0.03, yield:1.3},
+  {t:'SCHD', name:'Schwab US Dividend Equity ETF', type:'ETF', class:'dividend', cagr:11.0, vol:14, er:0.06, yield:3.5},
+  {t:'QQQ', name:'Invesco Nasdaq-100 ETF', type:'ETF', class:'growth', cagr:14.0, vol:21, er:0.20, yield:0.6},
+  {t:'VXUS', name:'Vanguard Total International Stock ETF', type:'ETF', class:'intl', cagr:6.0, vol:17, er:0.07, yield:3.0},
+  {t:'BND', name:'Vanguard Total Bond Market ETF', type:'ETF', class:'bond', cagr:2.5, vol:6, er:0.03, yield:3.8},
+  {t:'JEPI', name:'JPMorgan Equity Premium Income ETF', type:'ETF', class:'income', cagr:8.0, vol:12, er:0.35, yield:7.5},
+  {t:'KO', name:'Coca-Cola Co', type:'Stock', class:'stock-defensive', cagr:8.0, vol:17, er:0, yield:3.0},
+  {t:'AAPL', name:'Apple Inc', type:'Stock', class:'stock-growth', cagr:22.0, vol:27, er:0, yield:0.5},
+  {t:'MSFT', name:'Microsoft Corp', type:'Stock', class:'stock-growth', cagr:21.0, vol:26, er:0, yield:0.8},
+];
+
+const classColor = {
+  broad:'#0F5257', dividend:'#B8862B', growth:'#378ADD', intl:'#7F77DD',
+  bond:'#639922', income:'#1D9E75', 'stock-defensive':'#A6383F', 'stock-growth':'#D85A30'
+};
+const classLabel = {
+  broad:'Broad equity', dividend:'Dividend equity', growth:'Growth equity', intl:'International',
+  bond:'Bonds', income:'Income equity', 'stock-defensive':'Single stock — defensive', 'stock-growth':'Single stock — growth'
+};
+
+const toleranceTarget = { conservative: 8, balanced: 15, growth: 22 };
+const horizonMult = { 1: 0.7, 2: 0.85, 5: 1.15 };
+
+let horizon = 2, risk = 'balanced';
+
+function score(h){
+  const effTarget = toleranceTarget[risk] * horizonMult[horizon];
+  let s = 100 - Math.abs(h.vol - effTarget) * 2.6;
+  s += h.type === 'ETF' ? 5 : -8;
+  s -= h.er * 90;
+  return Math.max(4, Math.min(99, Math.round(s)));
+}
+
+function render(){
+  const scored = holdings.map(h => ({...h, s: score(h)})).sort((a,b)=>b.s-a.s);
+  const cardsEl = document.getElementById('cards');
+  cardsEl.innerHTML = scored.map(h => `
+    <div class="card">
+      <div>
+        <div class="card-head">
+          <span class="ticker">${h.t}</span>
+          <span class="tag ${h.type==='ETF'?'etf':'stock'}">${h.type}</span>
+          <span class="name">${h.name}</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><b>${h.cagr.toFixed(1)}%</b><span>Hist. CAGR</span></div>
+          <div class="metric"><b>${h.vol.toFixed(0)}%</b><span>Volatility</span></div>
+          <div class="metric"><b>${h.er.toFixed(2)}%</b><span>Expense ratio</span></div>
+          <div class="metric"><b>${h.yield.toFixed(1)}%</b><span>Yield</span></div>
+        </div>
+      </div>
+      <div class="score-wrap">
+        <div class="score-label">Fit score</div>
+        <div class="score-num">${h.s}</div>
+        <div class="score-bar"><div class="score-fill" style="width:${h.s}%;background:${h.s>=65?'#0F5257':h.s>=40?'#B8862B':'#A6383F'}"></div></div>
+      </div>
+    </div>
+  `).join('');
+  drawCompass();
+}
+
+function drawCompass(){
+  const w = 640, hgt = 320, pad = 44;
+  const maxVol = 30, maxCagr = 24;
+  const x = v => pad + (v/maxVol)*(w-pad*2);
+  const y = v => hgt-pad - (v/maxCagr)*(hgt-pad*2);
+  let dots = '';
+  holdings.forEach(h=>{
+    const r = 5 + (0.4 - Math.min(h.er,0.4))*40;
+    dots += `<circle cx="${x(h.vol)}" cy="${y(h.cagr)}" r="${r}" fill="${classColor[h.class]}" fill-opacity="0.85" stroke="#fff" stroke-width="1.5"/>`;
+    dots += `<text x="${x(h.vol)}" y="${y(h.cagr)-r-6}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#4A5560">${h.t}</text>`;
+  });
+  let gridlines = '';
+  for(let gv=5; gv<maxVol; gv+=5){
+    gridlines += `<line x1="${x(gv)}" y1="${pad}" x2="${x(gv)}" y2="${hgt-pad}" stroke="#D8DCE1" stroke-width="1"/>`;
+  }
+  for(let gv=0; gv<maxCagr; gv+=4){
+    gridlines += `<line x1="${pad}" y1="${y(gv)}" x2="${w-pad}" y2="${y(gv)}" stroke="#D8DCE1" stroke-width="1"/>`;
+  }
+  const svg = `
+  <svg viewBox="0 0 ${w} ${hgt}" width="100%" role="img" aria-label="Scatter chart of ten funds and stocks plotting historical volatility against historical return">
+    ${gridlines}
+    <line x1="${pad}" y1="${hgt-pad}" x2="${w-pad}" y2="${hgt-pad}" stroke="#8A939C" stroke-width="1.2"/>
+    <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${hgt-pad}" stroke="#8A939C" stroke-width="1.2"/>
+    <text x="${w/2}" y="${hgt-8}" text-anchor="middle" font-family="Inter" font-size="12" fill="#8A939C">Volatility (annualized, %) →</text>
+    <text x="14" y="${hgt/2}" text-anchor="middle" font-family="Inter" font-size="12" fill="#8A939C" transform="rotate(-90 14 ${hgt/2})">← Historical return (%)</text>
+    ${dots}
+  </svg>`;
+  document.getElementById('compass').innerHTML = svg;
+
+  const legend = Object.keys(classLabel).map(k=>`<span><span class="dot" style="background:${classColor[k]}"></span>${classLabel[k]}</span>`).join('');
+  document.getElementById('legend').innerHTML = legend;
+}
+
+const cautions = [
+  {t:'Broad market ETFs', p:'Low single-position risk, but they still fall with the whole market. A 2008- or 2020-style drop takes these down too — the point is they recover with the market rather than risking zero.'},
+  {t:'Growth-tilted (QQQ, single growth stocks)', p:'Higher historical return comes with sharper drawdowns. Best suited to longer horizons where you won\'t need the cash mid-dip.'},
+  {t:'Dividend / income funds', p:'Smoother ride, but yield can get cut in a downturn and total return can lag pure growth over long stretches.'},
+  {t:'Single stocks (KO, AAPL, MSFT)', p:'No diversification — one company\'s bad quarter is 100% of that position\'s move. Fine as a small satellite, risky as a core holding.'},
+  {t:'Bonds (BND)', p:'Low volatility, but also low long-run return — mainly there to dampen the swings of the rest of the portfolio, not to grow it.'},
+  {t:'International (VXUS)', p:'Adds diversification away from US-only risk, but has historically lagged US returns over the past decade — watch expectations, not just the label.'},
+];
+document.getElementById('cautions').innerHTML = cautions.map(c=>`
+  <div class="caution-card"><b>${c.t}</b><p>${c.p}</p></div>
+`).join('');
+
+document.getElementById('horizonPills').addEventListener('click', e=>{
+  if(e.target.classList.contains('pill')){
+    [...e.currentTarget.children].forEach(p=>p.classList.remove('active'));
+    e.target.classList.add('active');
+    horizon = e.target.dataset.val;
+    render();
+  }
+});
+// ---- Mode toggle ----
+document.getElementById('modeToggle').addEventListener('click', e=>{
+  if(!e.target.classList.contains('pill')) return;
+  [...e.currentTarget.children].forEach(p=>p.classList.remove('active'));
+  e.target.classList.add('active');
+  const mode = e.target.dataset.mode;
+  document.getElementById('quickPanel').style.display = mode === 'quick' ? '' : 'none';
+  document.getElementById('manualPanel').style.display = mode === 'manual' ? '' : 'none';
+});
+
+// ---- Shared: multi-timeframe price trend chart (real anchor points only, switchable range) ----
+function trendChartSvgMarkup(points){
+  const w=640, h=220, padL=14, padR=76, padT=20, padB=32;
+  const values = points.map(p=>p.value);
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max-min) || (max*0.1) || 1;
+  const yPad = range*0.15;
+  const yMin = min-yPad, yMax = max+yPad;
+  const n = points.length;
+  const x = i => padL + (n===1 ? 0 : (i/(n-1))*(w-padL-padR));
+  const y = v => h-padB - ((v-yMin)/(yMax-yMin))*(h-padT-padB);
+  const up = points[n-1].value >= points[0].value;
+  const color = up ? '#0F5257' : '#A6383F';
+  const linePts = points.map((p,i)=>`${x(i)},${y(p.value)}`).join(' ');
+  const areaPts = `${x(0)},${h-padB} ${linePts} ${x(n-1)},${h-padB}`;
+  const gradId = 'tcGrad'+Math.random().toString(36).slice(2,8);
+  const refY = y(points[0].value);
+  const dots = points.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.value)}" r="3.5" fill="${color}"/>`).join('');
+  const labels = points.map((p,i)=>`<text x="${x(i)}" y="${h-8}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#8A939C">${p.label}</text>`).join('');
+  const lastY = y(points[n-1].value);
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img" aria-label="Line chart of verified historical price points from oldest to most recent">
+    <defs>
+      <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.28"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <line x1="${padL}" y1="${refY}" x2="${w-padR}" y2="${refY}" stroke="#8A939C" stroke-width="1" stroke-dasharray="2,3"/>
+    <polygon points="${areaPts}" fill="url(#${gradId})"/>
+    <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="2.4"/>
+    ${dots}
+    <rect x="${w-padR+10}" y="${lastY-11}" width="${padR-16}" height="22" rx="4" fill="${color}"/>
+    <text x="${w-padR+10+((padR-16)/2)}" y="${lastY+4}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="12" font-weight="500" fill="#fff">$${points[n-1].value}</text>
+    ${labels}
+  </svg>`;
+}
+
+const TREND_RANGE_INCLUDE = {
+  '1mo': ['1mo','now'],
+  '3mo': ['3mo','1mo','now'],
+  '6mo': ['6mo','3mo','1mo','now'],
+  '1yr': ['1yr','6mo','3mo','1mo','now']
+};
+function filterPointsByRange(valid, range){
+  const keep = TREND_RANGE_INCLUDE[range] || [];
+  return valid.filter(p => keep.includes(p.key));
+}
+
+function trendChartHtml(ticker, rawPoints){
+  const valid = rawPoints.filter(p => p.value !== null && p.value !== undefined && !isNaN(p.value));
+  if(valid.length < 2) return '';
+  const chartId = 'tc'+Math.random().toString(36).slice(2,9);
+  const tabsMeta = [
+    {key:'1mo', label:'1M'},
+    {key:'3mo', label:'3M'},
+    {key:'6mo', label:'6M'},
+    {key:'1yr', label:'1Y'}
+  ].filter(t => valid.some(p => p.key === t.key) && filterPointsByRange(valid, t.key).length >= 2);
+  const defaultTab = tabsMeta.length ? tabsMeta[tabsMeta.length-1].key : null;
+  const defaultPoints = defaultTab ? filterPointsByRange(valid, defaultTab) : valid;
+  const pointsAttr = encodeURIComponent(JSON.stringify(valid));
+  return `
+    <div class="trend-chart" id="${chartId}" data-points="${pointsAttr}">
+      <div class="tc-label">${ticker ? ticker+' — ' : ''}Price trend — pick a range</div>
+      ${tabsMeta.length ? `<div class="tc-tabs">${tabsMeta.map(t=>`<button type="button" class="tc-tab${t.key===defaultTab?' active':''}" data-range="${t.key}" data-chart="${chartId}">${t.label}</button>`).join('')}</div>` : ''}
+      <div class="tc-svg-wrap">${trendChartSvgMarkup(defaultPoints)}</div>
+      <div class="mini-note">Connects the handful of price points we actually verified for whichever range you pick — not full daily or intraday data, so treat lines between dots as a straight-line approximation, not the real path the price took. A true "1D" intraday view isn't available since there's no live tick feed here.</div>
+    </div>`;
+}
+
+document.addEventListener('click', function(e){
+  const btn = e.target.closest('.tc-tab');
+  if(!btn) return;
+  const container = document.getElementById(btn.dataset.chart);
+  if(!container) return;
+  const valid = JSON.parse(decodeURIComponent(container.dataset.points));
+  const filtered = filterPointsByRange(valid, btn.dataset.range);
+  if(filtered.length < 2) return;
+  container.querySelectorAll('.tc-tab').forEach(b => b.classList.toggle('active', b === btn));
+  container.querySelector('.tc-svg-wrap').innerHTML = trendChartSvgMarkup(filtered);
+});
+
+// ---- Shared helpers for JSON-based tier scans ----
+function escapeHtml(str){ return String(str==null?'':str).replace(/</g,'&lt;'); }
+
+function extractJsonArray(text){
+  let cleaned = text.trim();
+  const fenceMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if(fenceMatch) cleaned = fenceMatch[1].trim();
+  const start = cleaned.indexOf('[');
+  const end = cleaned.lastIndexOf(']');
+  if(start === -1 || end === -1) throw new Error('no JSON array found in response');
+  return JSON.parse(cleaned.slice(start, end+1));
+}
+
+function renderJsonCandidateCards(items, rows, badgeKey, priceKey){
+  if(!items.length) return `<div class="ai-body">Nothing currently clears this bar — that's a real result, not an error. Try again later or loosen your own expectations rather than trusting a forced pick.</div>`;
+  return items.map(it=>{
+    const rowsHtml = rows.map(r => it[r.key] !== undefined && it[r.key] !== null && it[r.key] !== ''
+      ? `<div class="cc-row"><b>${escapeHtml(r.label)}</b>${escapeHtml(it[r.key])}</div>` : '').join('');
+    const badge = badgeKey && it[badgeKey] ? `<div class="cc-verdict">${escapeHtml(it[badgeKey])}</div>` : '';
+    const priceTag = priceKey && it[priceKey] != null ? ` <span class="cc-name">$${escapeHtml(it[priceKey])}</span>` : '';
+    return `
+      <div class="candidate-card">
+        <div class="cc-head"><span class="cc-ticker">${escapeHtml(it.ticker)}</span><span class="cc-name">${escapeHtml(it.name)}</span>${priceTag}</div>
+        ${rowsHtml}
+        ${badge}
+      </div>`;
+  }).join('');
+}
+
+async function runJsonScan(resultElId, prompt, rows, badgeKey, priceKey, loadingMsg, labelText){
+  const resultEl = document.getElementById(resultElId);
+  resultEl.innerHTML = `<div class="ai-card"><div class="ai-loading">${loadingMsg}</div></div>`;
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2200,
+        messages: [{ role: "user", content: prompt }],
+        tools: [{ type: "web_search_20250305", name: "web_search" }]
+      })
+    });
+    const data = await response.json();
+    const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+    const text = textBlocks.join('\n').trim();
+    if(!text){ throw new Error('empty response'); }
+    const items = extractJsonArray(text);
+    const cardsHtml = renderJsonCandidateCards(items, rows, badgeKey, priceKey);
+    resultEl.innerHTML = `
+      <div class="ai-card">
+        <div class="ai-label">${labelText}</div>
+        ${cardsHtml}
+        <div class="ai-foot">Found via live web search — verify every number independently before acting, and check for anything newer than this scan. A stock clearing these filters is a candidate to research further, not a recommendation. Not financial advice.</div>
+      </div>`;
+  }catch(err){
+    resultEl.innerHTML = `<div class="ai-card"><div class="ai-error">Couldn't complete the scan just now (${err.message}). Try again in a moment.</div></div>`;
+  }
+}
+
+// ---- General Tier: fallen angels with a near-term catalyst (the original scan) ----
+async function scanGeneralTier(){
+  const resultEl = document.getElementById('scan_general_result');
+  resultEl.innerHTML = `<div class="ai-card"><div class="ai-loading">Scanning for quality companies trading down on temporary bad news — this involves several searches, give it a moment…</div></div>`;
+
+  const prompt = `Act as an expert equity analyst specializing in "Fallen Angel" quality value-investing.
+Goal: Identify highly profitable, market-leading public companies currently experiencing a temporary stock price pullback due to short-term negative news or overblown market sentiment.
+
+Criteria:
+1. Strong Fundamentals (Non-Negotiable):
+   - Proven profitability (Positive Net Income and Free Cash Flow).
+   - High Operating Margins (>15-20%) or strong competitive moat.
+   - Solid balance sheet (low risk of bankruptcy or insolvency).
+2. Price Pullback Metric:
+   - Stock is currently trading 10% to 30% below its 52-week high.
+3. News & Sentiment Filter:
+   - The negative driver MUST be temporary or sentiment-driven (e.g., temporary increase in AI CapEx spending, conservative forward guidance for 1 quarter, broader sector sell-off, or temporary regulatory headline noise).
+   - REJECT companies with structural decay (e.g., permanently falling revenues, debt default risk, or obsolete product lines).
+
+Quantitative filter to apply: net_income > 0, operating_margin > 15%, free_cash_flow > 0, debt_to_equity < 1.5, price_vs_52wk_high between -10% and -30%, revenue_growth_3yr > 5%.
+
+CRITICAL REQUIREMENT — NEAR-TERM CATALYST & 6-12 MONTH OPPORTUNITY FILTER:
+Reject mature "value traps" or stagnant cash-generative companies that lack high-upside growth drivers over the next 2 to 4 quarters. Every selected company MUST pass all three Opportunity Criteria below:
+1. Identifiable 6-12 Month Growth Catalysts — at least one of:
+   - Near-Term Demand Shock / Supercycle: directly capturing massive capital spending from cash-rich buyers (e.g., AI hyperscaler CapEx, sovereign defense spending, power grid electrification).
+   - Commercial / Operational Inflection: major new product launches, new factory/foundry capacity coming online, or massive order backlog realization within 2-4 quarters.
+   - Re-Rating Trigger: short-term fears (CapEx spikes, single-quarter supply delay, headline noise) clearing up in 6-12 months, leading to price-multiple expansion.
+2. Secular Industry Tailwinds (not cyclical stagnation): the company operates in a sector expanding at >10-15% CAGR (e.g., custom AI accelerators, semiconductor lithography, advanced energy storage), NOT a flat or declining industry.
+3. Forward Earnings & Revenue Acceleration: Wall Street consensus projects double-digit revenue or EPS growth over the next 4 quarters, with high revenue visibility backed by signed enterprise contracts, backlogs, or non-cancelable purchase orders.
+
+REJECT a candidate if any of these are true:
+- Profitable but revenue growth is flat (0% to 5% YoY).
+- No clear catalyst to re-accelerate the stock price within 12 months.
+- Paying out high dividends simply because it has run out of reinvestment/growth opportunities.
+
+Do not limit candidates to any single industry, sector, or theme (e.g., don't restrict to just AI/tech) — consider companies across all industries: technology, healthcare, industrials, financials, energy, materials, consumer, utilities, real estate, and more. Any sector examples mentioned above are illustrative only, not an exhaustive list or a restriction.
+
+Use web search to find 3 to 5 real, currently-trading companies that plausibly clear BOTH the quality/pullback criteria AND this catalyst filter. Only include a company if you can find reasonably current support for it — if you're not confident on a specific number, say so rather than inventing precision. Do not fabricate companies or financials. If nothing currently clears all of this, say so honestly rather than forcing weak fits.
+
+For EACH candidate, output in EXACTLY this format (no markdown, no extra symbols), with candidates separated by a line containing only ===:
+TICKER: (ticker only)
+COMPANY: (full company name)
+BUSINESS: (1-2 sentences on what the business actually does — the core economic engine)
+CATALYST: (1-2 sentences: the bad news / pullback catalyst — why the stock dropped)
+GROWTH_DRIVER: (1-2 sentences: the specific 6-12 month catalyst — which of the three types it is, and what it concretely is)
+SECULAR_TAILWIND: (1 sentence: the sector growth rate/trend showing this isn't cyclical stagnation)
+THESIS: (1-2 sentences: why the drop looks like an overreaction and why the growth catalyst supports re-acceleration)
+VERDICT: (one short line — confidence level, and any specific number, like revenue growth or margin, you couldn't fully verify)
+===
+
+After all candidates, add one final short paragraph (under 70 words) reminding the reader that a stock being down doesn't guarantee it recovers, that a projected catalyst can slip or fail to materialize, that "temporary vs structural" is a judgment call that can be wrong, and that this is a rules-based screen for candidates to research further — not a buy recommendation.`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 2200,
+        messages: [{ role: "user", content: prompt }],
+        tools: [{ type: "web_search_20250305", name: "web_search" }]
+      })
+    });
+    const data = await response.json();
+    const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+    const text = textBlocks.join('\n').trim();
+    if(!text){ throw new Error('empty response'); }
+
+    const blocks = text.split(/\n?===\n?/).map(b=>b.trim()).filter(Boolean);
+    const field = (block, name) => {
+      const m = block.match(new RegExp(name + ':\\s*([\\s\\S]*?)(?=\\n[A-Z]+:|$)'));
+      return m ? m[1].trim() : '';
+    };
+    let cardsHtml = '';
+    let closingNote = '';
+    blocks.forEach(block=>{
+      if(/^TICKER:/.test(block)){
+        const ticker = field(block,'TICKER');
+        const company = field(block,'COMPANY');
+        const business = field(block,'BUSINESS');
+        const catalyst = field(block,'CATALYST');
+        const growthDriver = field(block,'GROWTH_DRIVER');
+        const secularTailwind = field(block,'SECULAR_TAILWIND');
+        const thesis = field(block,'THESIS');
+        const verdict = field(block,'VERDICT');
+        cardsHtml += `
+          <div class="candidate-card">
+            <div class="cc-head"><span class="cc-ticker">${ticker}</span><span class="cc-name">${company}</span></div>
+            <div class="cc-row"><b>The business</b>${business}</div>
+            <div class="cc-row"><b>Why it dropped</b>${catalyst}</div>
+            ${growthDriver ? `<div class="cc-row"><b>6\u201312 month growth catalyst</b>${growthDriver}</div>` : ''}
+            ${secularTailwind ? `<div class="cc-row"><b>Sector tailwind</b>${secularTailwind}</div>` : ''}
+            <div class="cc-row"><b>Buy-the-dip thesis</b>${thesis}</div>
+            ${verdict ? `<div class="cc-verdict">${verdict}</div>` : ''}
+          </div>`;
+      } else if(block.length > 20){
+        closingNote = block;
+      }
+    });
+
+    if(!cardsHtml){ throw new Error('could not parse any candidates from the response'); }
+
+    resultEl.innerHTML = `
+      <div class="ai-card">
+        <div class="ai-label">General Tier — scanned live just now</div>
+        ${cardsHtml}
+        ${closingNote ? `<div class="ai-foot" style="margin-top:14px;">${closingNote.replace(/</g,'&lt;')}</div>` : ''}
+        <div class="ai-foot">Found via live web search — verify every number independently before acting, especially margins and debt figures, and check for anything newer than this scan. Not financial advice.</div>
+      </div>`;
+  }catch(err){
+    resultEl.innerHTML = `<div class="ai-card"><div class="ai-error">Couldn't complete the scan just now (${err.message}). Try again in a moment.</div></div>`;
+  }
+}
+
+// ---- Tier 1: Blue-Chip Compounders ----
+async function scanTier1(){
+  const prompt = `SYSTEM PROMPT: TIER 1 BLUE-CHIP COMPOUNDERS SCREENER
+Role: You are an elite institutional equity analyst specializing in mega-cap quality compounders.
+Task: Identify top-tier mega-cap companies currently offering attractive entry points or strong 6-12 month catalyst setups.
+Screening Criteria (STRICT):
+1. Market Capitalization: >= $100 Billion (Mega-Cap / Large-Cap Blue Chip).
+2. Moat & Quality: Wide economic moat, ROIC > 15%, dominant market share, and fortress balance sheet (low Net Debt/EBITDA).
+3. Valuation / Entry Setup: Trading at a discount to historical P/E or intrinsic value, or consolidating after a healthy pullback.
+4. Growth Engine: Sustainable 3-5 year forward earnings CAGR >= 10-15%.
+
+Do not limit candidates to any single industry, sector, or theme (e.g., don't restrict to just AI/tech) — consider companies across all industries: technology, healthcare, industrials, financials, energy, materials, consumer, utilities, real estate, and more. Any sector examples mentioned above are illustrative only, not an exhaustive list or a restriction.
+
+Use web search to find 3 to 5 real, currently-trading companies that plausibly clear this bar right now. Only include a company if you have reasonably current support for it — if unsure about a specific number, note the uncertainty inside that field's text rather than inventing false precision. Do not fabricate companies or numbers. If nothing currently qualifies, return an empty array.
+
+Output ONLY a valid JSON array — no markdown code fences, no prose before or after, nothing but the array — where each item has exactly these keys: ticker, name, marketCap, moatSummary, catalyst, peVsAvg, convictionScore. convictionScore must be a short string like "High", "Moderate", or "Speculative" — not a fabricated numeric score. catalyst should specifically describe the 6-12 month catalyst (e.g., AI monetization, regulatory tailwind, new product cycle).`;
+
+  const rows = [
+    {key:'marketCap', label:'Market cap'},
+    {key:'moatSummary', label:'Moat & advantage'},
+    {key:'catalyst', label:'6\u201312 month catalyst'},
+    {key:'peVsAvg', label:'P/E vs 5-yr avg'}
+  ];
+  await runJsonScan('scan_tier1_result', prompt, rows, 'convictionScore', null,
+    'Scanning mega-caps for quality entry points — several searches, give it a moment…',
+    'Tier 1 \u2014 Blue-Chip Compounders, scanned live just now');
+}
+
+// ---- Tier 2: Sub-$20 High-Growth Compounders ----
+async function scanTier2(){
+  const prompt = `SYSTEM PROMPT: SUB-$20 HIGH-GROWTH COMPOUNDERS SCREENER
+Role: You are a growth-focused hedge fund analyst targeting high-velocity mid-cap and small-cap stocks priced under $20.
+Task: Filter and select fundamental growth companies trading under $20 per share that are profitable or rapidly approaching profitability.
+Screening Criteria (STRICT):
+1. Share Price Limit: MUST be strictly under $20 per share.
+2. Quality Floor: Market Cap >= $2 Billion (Strictly NO micro-cap penny stocks or low-liquidity traps).
+3. Growth Engine: YoY Revenue Growth >= 20% OR rapid margin expansion.
+4. Financial Health: Positive GAAP EPS or proven cash-flow positive trajectory (e.g., positive EBITDA).
+5. 6-12 Month Catalyst: Upcoming earnings surprise, product rollout, credit upgrade, or index inclusion.
+
+Do not limit candidates to any single industry, sector, or theme (e.g., don't restrict to just AI/tech) — consider companies across all industries: technology, healthcare, industrials, financials, energy, materials, consumer, utilities, real estate, and more. Any sector examples mentioned above are illustrative only, not an exhaustive list or a restriction.
+
+Use web search to find 3 to 5 real, currently-trading companies that plausibly clear this bar right now, and VERIFY the current share price is actually under $20 — do not include anything you can't confirm is currently under that price. If unsure about a specific number, note the uncertainty inside that field's text rather than inventing false precision. Do not fabricate companies or numbers. If nothing currently qualifies, return an empty array.
+
+Output ONLY a valid JSON array — no markdown code fences, no prose before or after, nothing but the array — where each item has exactly these keys: ticker, name, sharePrice, marketCap, revenueGrowth, profitabilityStatus, catalyst, riskFactor. sharePrice must be a number under 20.`;
+
+  const rows = [
+    {key:'marketCap', label:'Market cap'},
+    {key:'revenueGrowth', label:'Revenue growth'},
+    {key:'profitabilityStatus', label:'Profitability'},
+    {key:'catalyst', label:'6\u201312 month catalyst'}
+  ];
+  await runJsonScan('scan_tier2_result', prompt, rows, 'riskFactor', 'sharePrice',
+    'Scanning under-$20 growth names — several searches, give it a moment…',
+    'Tier 2 \u2014 Sub-$20 High-Growth Compounders, scanned live just now');
+}
+
+document.getElementById('scanGeneralBtn').addEventListener('click', function(e){
+  const btn = e.target;
+  btn.disabled = true;
+  scanGeneralTier().finally(()=>{ btn.disabled = false; });
+});
+document.getElementById('scanTier1Btn').addEventListener('click', function(e){
+  const btn = e.target;
+  btn.disabled = true;
+  scanTier1().finally(()=>{ btn.disabled = false; });
+});
+document.getElementById('scanTier2Btn').addEventListener('click', function(e){
+  const btn = e.target;
+  btn.disabled = true;
+  scanTier2().finally(()=>{ btn.disabled = false; });
+});
+
+// ---- Shared: $100, 6-months-ago hypothetical case study ----
+function caseStudyHtml(ticker, price, price6moAgo, dividendYieldPct){
+  if(price === null || price6moAgo === null || price6moAgo <= 0) return '';
+  const shares = 100 / price6moAgo;
+  const endingFromPrice = shares * price;
+  const divPct = dividendYieldPct || 0;
+  const approxDividendIncome = 100 * (divPct/100) * 0.5; // rough half-year estimate off today's yield
+  const totalEnding = endingFromPrice + approxDividendIncome;
+  const totalReturnDollar = totalEnding - 100;
+  const totalReturnPct = (totalReturnDollar/100)*100;
+  const up = totalReturnDollar >= 0;
+  const sign = up ? '+' : '−';
+  const cls = up ? 'cs-up' : 'cs-down';
+  return `
+    <div class="case-study">
+      <div class="cs-label">Hypothetical: $100 put into ${ticker || 'this'}, ~6 months ago</div>
+      <div class="cs-headline">$100 → <span class="${cls}">$${totalEnding.toFixed(2)}</span> <span class="${cls}">(${sign}$${Math.abs(totalReturnDollar).toFixed(2)}, ${sign}${Math.abs(totalReturnPct).toFixed(1)}%)</span></div>
+      <div class="cs-rows">
+        <div>Price then → now: <b>$${price6moAgo}</b> → <b>$${price}</b></div>
+        <div>Shares that $100 would've bought: <b>${shares.toFixed(2)}</b></div>
+        ${divPct > 0 ? `<div>Approx. dividend income over 6 months (at current ${divPct}% yield): <b>+$${approxDividendIncome.toFixed(2)}</b></div>` : ''}
+      </div>
+      <div class="cs-note">This is a backward-looking hypothetical using an approximate price from ~6 months ago and today's dividend yield extrapolated over the period — not actual distributions, and never a prediction of what happens next. Past performance doesn't repeat on schedule.</div>
+    </div>`;
+}
+
+// ---- Shared: 52-week range position graph ----
+function rangeGraphHtml(ticker, price, low, high){
+  if(price === null || low === null || high === null || high <= low) return '';
+  const pct = Math.max(0, Math.min(100, ((price - low) / (high - low)) * 100));
+  return `
+    <div class="range-graph">
+      <div class="rg-label">${ticker ? ticker + ' — ' : ''}Where it sits in its 52-week range</div>
+      <div class="rg-track">
+        <div class="rg-marker" style="left:${pct}%;" data-label="$${price}"></div>
+      </div>
+      <div class="rg-ends"><span>$${low} (52-wk low)</span><span>$${high} (52-wk high)</span></div>
+    </div>`;
+}
+
+// ---- Quick lookup: live web research via Claude ----
+async function quickLookup(ticker){
+  const resultEl = document.getElementById('qk_result');
+  resultEl.innerHTML = `<div class="ai-card"><div class="ai-loading">Searching for ${ticker} — pulling current price, financials, ownership, and recent news…</div></div>`;
+
+  const prompt = `Research the stock or ETF with ticker "${ticker}" using web search right now. Find and report:
+- Current price, market cap, exchange
+- Whether it's profitable (EPS/revenue) or unprofitable, and roughly how it's trending
+- 52-week range and volatility character (beta if available)
+- Dividend yield, if any
+- Approximate closing price about 1 month ago, 3 months ago, 6 months ago, and 1 year ago (from a chart or historical data page) — get as many of these as you reasonably can
+- Ownership concentration — is a single holder or small group unusually dominant?
+- Any recent major news: pivots/rebrands, litigation, short-seller reports, dilution events, analyst coverage
+- If it's a fund/ETF instead of a single stock, report expense ratio, diversification, and asset class instead of single-company items
+
+Then act as a blunt, honest risk analyst for a first-time investor. You are NOT a licensed financial advisor — do not present this as personalized advice.
+
+Rules:
+1. Clearly separate what you found verified via search from anything uncertain or single-sourced.
+2. Never invent specific price targets, stop-loss levels, or exact future percentages as reliable predictions. Illustrative bull/bear ranges are fine only if explicitly labeled as illustrative, not forecasts.
+3. Name ownership-concentration, dilution, and cash-burn risk directly if the data shows it.
+4. Take an actual stance (cautiously bullish / cautiously bearish / neutral) with reasoning — don't just list both sides and stop.
+5. End with one line: a risk-tier verdict (Tier 1 core / Tier 2 growth-satellite / Tier 3 high-risk speculative) and a suggested max position-size band.
+6. As the VERY LAST line of your entire reply, on its own line, output exactly this format with real numbers you found (no words around it, just this): DATA:{"price":123.45,"low52":100.00,"high52":150.00,"price1moAgo":118.00,"price3moAgo":115.00,"price6moAgo":110.00,"price1yrAgo":95.00,"dividendYieldPct":1.3}
+   Use null for any value you couldn't verify, e.g. DATA:{"price":123.45,"low52":null,"high52":null,"price1moAgo":null,"price3moAgo":null,"price6moAgo":null,"price1yrAgo":null,"dividendYieldPct":null}
+Keep the prose part under 320 words, plain text, no markdown headers or bullet symbols.`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1500,
+        messages: [{ role: "user", content: prompt }],
+        tools: [{ type: "web_search_20250305", name: "web_search" }]
+      })
+    });
+    const data = await response.json();
+    const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+    let text = textBlocks.join('\n').trim();
+    if(!text){ throw new Error('empty response'); }
+
+    let graphHtml = '';
+    let caseHtml = '';
+    let trendHtml = '';
+    const dataMatch = text.match(/DATA:\s*(\{[^\n]*\})\s*$/);
+    if(dataMatch){
+      text = text.slice(0, dataMatch.index).trim();
+      try{
+        const parsed = JSON.parse(dataMatch[1]);
+        graphHtml = rangeGraphHtml(ticker, parsed.price, parsed.low52, parsed.high52);
+        caseHtml = caseStudyHtml(ticker, parsed.price, parsed.price6moAgo, parsed.dividendYieldPct);
+        trendHtml = trendChartHtml(ticker, [
+          {key:'1yr', label:'1yr ago', value:parsed.price1yrAgo},
+          {key:'6mo', label:'6mo ago', value:parsed.price6moAgo},
+          {key:'3mo', label:'3mo ago', value:parsed.price3moAgo},
+          {key:'1mo', label:'1mo ago', value:parsed.price1moAgo},
+          {key:'now', label:'Now', value:parsed.price}
+        ]);
+      }catch(e){ /* graph/case study/trend are bonuses — skip silently if parsing fails */ }
+    }
+
+    resultEl.innerHTML = `
+      <div class="ai-card">
+        <div class="ai-label">${ticker} — researched live just now</div>
+        ${graphHtml}
+        ${caseHtml}
+        <div class="ai-body">${text.replace(/</g,'&lt;')}</div>
+        <div class="ai-foot">Gathered via live web search and can be wrong, incomplete, or miss newer developments — verify independently, especially anything involving litigation or filings. Not financial advice.</div>
+        ${trendHtml}
+      </div>`;
+  }catch(err){
+    resultEl.innerHTML = `<div class="ai-card"><div class="ai-error">Couldn't complete the research just now (${err.message}). Try again, or switch to manual entry if you already have the numbers.</div></div>`;
+  }
+}
+
+document.getElementById('qk_submitBtn').addEventListener('click', function(e){
+  try{
+    const ticker = document.getElementById('qk_ticker').value.trim().toUpperCase();
+    const resultEl = document.getElementById('qk_result');
+    if(!ticker){
+      resultEl.innerHTML = `<div class="ai-card"><div class="ai-error">Type a ticker in the box first (e.g. QUCY).</div></div>`;
+      return;
+    }
+    const btn = e.target;
+    btn.disabled = true;
+    quickLookup(ticker).catch(err=>{
+      resultEl.innerHTML = `<div class="ai-card"><div class="ai-error">Something went wrong: ${(err && err.message) || err}</div></div>`;
+    }).finally(()=>{ btn.disabled = false; });
+  }catch(err){
+    document.getElementById('qk_result').innerHTML = `<div class="ai-card"><div class="ai-error">Unexpected error: ${err.message}</div></div>`;
+  }
+});
+document.getElementById('qk_ticker').addEventListener('keydown', e=>{
+  if(e.key === 'Enter'){ e.preventDefault(); document.getElementById('qk_submitBtn').click(); }
+});
+
+// ---- Analyze-any-stock: rule-based tier + live Claude critique ----
+function ruleScore(d){
+  const flags = [];
+  let tierScore = 0; // higher = riskier
+
+  if(d.mcap !== null){
+    if(d.mcap < 300) { flags.push(['fail','Micro-cap: market cap under $300M — outside the range where diversified-fund-style volatility assumptions apply.']); tierScore += 2; }
+    else if(d.mcap < 2000){ flags.push(['warn','Small-cap: more single-company risk than a broad index fund, less than a micro-cap.']); tierScore += 1; }
+    else { flags.push(['pass','Market cap is large/mid-cap territory — lower single-company concentration risk.']); }
+  }
+  if(d.eps !== null){
+    if(d.eps < 0){ flags.push(['fail','Unprofitable on a trailing basis (negative EPS) — cash burn is a live risk, check runway.']); tierScore += 2; }
+    else { flags.push(['pass','Profitable on a trailing basis.']); }
+  }
+  if(d.low !== null && d.high !== null && d.low > 0){
+    const ratio = d.high / d.low;
+    if(ratio > 5){ flags.push(['fail',`52-week range spans ${ratio.toFixed(1)}x low-to-high — extreme volatility, far outside typical fund/blue-chip bands.`]); tierScore += 2; }
+    else if(ratio > 2){ flags.push(['warn',`52-week range spans ${ratio.toFixed(1)}x low-to-high — well above typical large-cap volatility.`]); tierScore += 1; }
+    else { flags.push(['pass',`52-week range spans ${ratio.toFixed(1)}x — relatively contained.`]); }
+  }
+  if(d.beta !== null){
+    if(d.beta > 1.8){ flags.push(['fail',`Beta of ${d.beta} — historically swings roughly ${d.beta}x as hard as the broader market.`]); tierScore += 1; }
+    else if(d.beta > 1.3){ flags.push(['warn',`Beta of ${d.beta} — swings somewhat harder than the broader market.`]); }
+  }
+  if(d.owner !== null){
+    if(d.owner > 50){ flags.push(['fail',`A single holder controls ${d.owner}% of shares — governance risk: minority shareholders have limited influence, and the tradable float may be much smaller than shares outstanding suggest.`]); tierScore += 2; }
+    else if(d.owner > 25){ flags.push(['warn',`A single holder controls ${d.owner}% — meaningful concentration, worth understanding their incentives.`]); }
+  }
+
+  let tier, tierClass, sizeGuidance;
+  if(tierScore >= 5){ tier='Tier 3 — High-risk speculative'; tierClass='t3'; sizeGuidance='If at all, cap around 2–5% of total portfolio, sized as money you can fully afford to lose.'; }
+  else if(tierScore >= 2){ tier='Tier 2 — Elevated risk / growth'; tierClass='t2'; sizeGuidance='Reasonable as a smaller satellite position, not a core holding.'; }
+  else { tier='Tier 1 — Lower relative risk'; tierClass='t1'; sizeGuidance='Fits more comfortably as a larger, longer-term position — still do your own diligence.'; }
+
+  return {flags, tier, tierClass, sizeGuidance};
+}
+
+function renderRuleResult(d){
+  const r = ruleScore(d);
+  const iconFor = k => k==='fail' ? '⚠' : k==='warn' ? '•' : '✓';
+  const graphHtml = rangeGraphHtml(d.ticker, d.price, d.low, d.high);
+  const caseHtml = caseStudyHtml(d.ticker, d.price, d.price6mo, d.div);
+  const trendHtml = trendChartHtml(d.ticker, [
+    {key:'1yr', label:'1yr ago', value:d.price1yr},
+    {key:'6mo', label:'6mo ago', value:d.price6mo},
+    {key:'3mo', label:'3mo ago', value:d.price3mo},
+    {key:'1mo', label:'1mo ago', value:d.price1mo},
+    {key:'now', label:'Now', value:d.price}
+  ]);
+  document.getElementById('af_ruleResult').innerHTML = `
+    <div class="rule-card">
+      <span class="rule-tier ${r.tierClass}">${r.tier}</span>
+      <div style="font-size:13.5px;color:var(--ink-soft);">${r.sizeGuidance}</div>
+      ${graphHtml}
+      ${caseHtml}
+      <ul class="flag-list">${r.flags.map(([k,txt])=>`<li>${iconFor(k)} ${txt}</li>`).join('')}</ul>
+      ${trendHtml}
+    </div>`;
+  return r;
+}
+
+async function getAiRead(d, ruleResult){
+  const aiEl = document.getElementById('af_aiResult');
+  aiEl.innerHTML = `<div class="ai-card"><div class="ai-loading">Asking Claude for a read on this one…</div></div>`;
+
+  const prompt = `You're a blunt, honest risk analyst helping a first-time investor evaluate a single stock they're considering buying. You are NOT a licensed financial advisor and must not present this as personalized financial advice.
+
+Stock: ${d.ticker}${d.name ? ' — ' + d.name : ''}
+Current price: ${d.price !== null ? '$'+d.price : 'not given'}
+Market cap: ${d.mcap !== null ? '$'+d.mcap+'M' : 'not given'}
+EPS (ttm): ${d.eps !== null ? d.eps : 'not given'}
+Beta: ${d.beta !== null ? d.beta : 'not given'}
+52-week range: ${d.low !== null && d.high !== null ? '$'+d.low+' - $'+d.high : 'not given'}
+Largest holder ownership: ${d.owner !== null ? d.owner+'%' : 'not given'}
+Avg daily volume: ${d.vol !== null ? d.vol : 'not given'}
+
+Rule-based screen already assigned: ${ruleResult.tier}
+
+User's own research notes (story, catalysts, filings, red flags they found):
+"""${d.notes || 'none provided'}"""
+
+Rules for your response:
+1. Clearly separate what's verifiable/known from what's speculative or unverified in the notes above.
+2. Never invent specific price targets, stop-loss levels, or exact future percentages as if they were reliable predictions. You may discuss plausible bull/bear scenarios only as illustrative ranges, explicitly labeled as such — not forecasts.
+3. If the data suggests ownership concentration, dilution, or cash-burn risk, name it directly.
+4. Take an actual stance (cautiously bullish / cautiously bearish / neutral) with your reasoning — don't just list both sides and stop.
+5. End with one line: a risk-tier verdict and a suggested max position-size band.
+Keep it under 260 words, plain text, no markdown headers or bullet symbols.`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    const data = await response.json();
+    const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+    const text = textBlocks.join('\n').trim();
+    if(!text){ throw new Error('empty response'); }
+    aiEl.innerHTML = `
+      <div class="ai-card">
+        <div class="ai-label">Claude's read — generated live, right now</div>
+        <div class="ai-body">${text.replace(/</g,'&lt;')}</div>
+        <div class="ai-foot">AI-generated and can be wrong or miss context — verify independently before acting. Not financial advice.</div>
+      </div>`;
+  }catch(err){
+    aiEl.innerHTML = `<div class="ai-card"><div class="ai-error">Couldn't get a response just now (${err.message}). The rule-based score above is still valid — try again in a moment.</div></div>`;
+  }
+}
+
+document.getElementById('af_submitBtn').addEventListener('click', function(e){
+  const val = id => { const v = document.getElementById(id).value; return v === '' ? null : v; };
+  const num = id => { const v = val(id); return v === null ? null : parseFloat(v); };
+  const d = {
+    ticker: (val('af_ticker')||'').toUpperCase(),
+    name: val('af_name'),
+    price: num('af_price'),
+    mcap: num('af_mcap'),
+    eps: num('af_eps'),
+    beta: num('af_beta'),
+    low: num('af_low'),
+    high: num('af_high'),
+    owner: num('af_owner'),
+    vol: num('af_vol'),
+    div: num('af_div'),
+    price1mo: num('af_price1mo'),
+    price3mo: num('af_price3mo'),
+    price6mo: num('af_price6mo'),
+    price1yr: num('af_price1yr'),
+    notes: val('af_notes')
+  };
+  if(!d.ticker){
+    document.getElementById('af_ruleResult').innerHTML = `<div class="rule-card"><div class="ai-error">Enter at least a ticker first.</div></div>`;
+    return;
+  }
+  const btn = e.target;
+  btn.disabled = true;
+  const ruleResult = renderRuleResult(d);
+  getAiRead(d, ruleResult).finally(()=>{ btn.disabled = false; });
+});
+
+document.getElementById('riskPills').addEventListener('click', e=>{
+  if(e.target.classList.contains('pill')){
+    [...e.currentTarget.children].forEach(p=>p.classList.remove('active'));
+    e.target.classList.add('active');
+    risk = e.target.dataset.val;
+    render();
+  }
+});
+
+render();
+</script>
+
+</body>
+</html>
